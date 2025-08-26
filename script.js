@@ -1,8 +1,9 @@
 import { command as chat } from './commands/chat.js';
 import { command as myrank } from './commands/myrank.js';
 import { command as ranking } from './commands/ranking.js';
+import { command as createchannel } from './commands/createchannel.js'; 
 
-import { Client, Events, GatewayIntentBits } from 'discord.js';
+import { Client, Events, GatewayIntentBits, ChannelType } from 'discord.js';
 
 const client = new Client({ 
   intents: [
@@ -22,16 +23,41 @@ if (!AUTO_DELETE_GUILD_ID) {
 const EXEMPT_CHANNELS = (() => {
   if (process.env.EXEMPT_CHANNELS) {
     return process.env.EXEMPT_CHANNELS.split(',').map(s => s.trim()).filter(Boolean);
-  } else {
-    return [];
-  }
+  } else { return []; }
 })();
+
+const ALLOWED_CATEGORY_IDS = (() => {
+    if (process.env.ALLOWED_CATEGORY_IDS) {
+      return process.env.ALLOWED_CATEGORY_IDS.split(',').map(s => s.trim()).filter(Boolean);
+    } else {
+      console.error('[エラー] ALLOWED_CATEGORY_IDS が .env に設定されていません。');
+      return [];
+    }
+  })();
 
 client.once(Events.ClientReady, c => {
   console.log(`${c.user.tag}が飛び乗った！`);
 });
 
 client.on(Events.InteractionCreate, async interaction => {
+  if (interaction.isAutocomplete()) {
+    const commandName = interaction.commandName;
+    
+    if (commandName === 'createchannel') {
+      const focusedValue = interaction.options.getFocused();
+      const choices = interaction.guild.channels.cache
+        .filter(channel => 
+          channel.type === ChannelType.GuildCategory &&
+          ALLOWED_CATEGORY_IDS.includes(channel.id)
+        )
+        .map(channel => ({ name: channel.name, value: channel.id }));
+        
+      const filtered = choices.filter(choice => choice.name.startsWith(focusedValue));
+      await interaction.respond(filtered.slice(0, 25));
+    }
+    return;
+  }
+
   if (!interaction.isChatInputCommand()) return;
   
   try {
@@ -44,6 +70,9 @@ client.on(Events.InteractionCreate, async interaction => {
         break;
       case ranking.data.name:
         await ranking.execute(interaction);
+        break;
+      case createchannel.data.name: 
+        await createchannel.execute(interaction);
         break;
       default:
         console.error(`${interaction.commandName}というコマンドには対応していません。`);

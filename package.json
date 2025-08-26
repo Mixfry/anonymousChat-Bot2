@@ -1,0 +1,17 @@
+{
+  "name": "discord-anonymouschat-bot",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "script.js",
+  "scripts": {
+    "start": "node --env-file=.env deploy-commands.js && node --env-file=.env script.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "better-sqlite3": "^12.2.0",
+    "discord.js": "^14.15.3"
+  }
+}
